@@ -1,24 +1,33 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { useGraphs } from "~/hooks/useGraphApi";
+import type { CausalGraph } from "~/lib/types";
 
 interface GraphListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  graphs?: CausalGraph[];
+  isLoading?: boolean;
+  error?: { message: string } | null;
 }
 
-export function GraphList({ selectedId, onSelect }: GraphListProps) {
-  const { data: graphs, isLoading, error } = useGraphs();
-
-  if (isLoading) {
-    return <Loader2 className="animate-spin" />;
-  }
-
+export function GraphList({ selectedId, onSelect, graphs, isLoading, error }: GraphListProps) {
   if (error) {
     return (
       <div className="text-red-400">
         Error loading graphs: {error.message}
+      </div>
+    );
+  }
+
+  if (isLoading && (!graphs || graphs.length === 0)) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-14 rounded bg-gray-800/70 animate-pulse"
+          />
+        ))}
       </div>
     );
   }

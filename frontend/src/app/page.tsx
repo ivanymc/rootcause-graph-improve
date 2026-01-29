@@ -19,7 +19,7 @@ export default function Home() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
   // Fetch graphs to auto-select the first one
-  const { data: graphs } = useGraphs();
+  const { data: graphs, isLoading: graphsLoading, error: graphsError } = useGraphs();
   const resetAllGraphs = useResetAllGraphs();
   const hasResetRef = useRef(false);
 
@@ -80,7 +80,13 @@ export default function Home() {
             What-if causal simulation
           </p>
           <h2 className="mb-3 font-semibold">Available Graphs</h2>
-          <GraphList selectedId={selectedGraphId} onSelect={handleGraphSelect} />
+          <GraphList
+            selectedId={selectedGraphId}
+            onSelect={handleGraphSelect}
+            graphs={graphs}
+            isLoading={graphsLoading}
+            error={graphsError}
+          />
         </aside>
 
         {/* Mobile/Tablet Left Sidebar Overlay */}
@@ -107,7 +113,13 @@ export default function Home() {
                 What-if causal simulation
               </p>
               <h2 className="mb-3 font-semibold">Available Graphs</h2>
-              <GraphList selectedId={selectedGraphId} onSelect={handleGraphSelect} />
+              <GraphList
+                selectedId={selectedGraphId}
+                onSelect={handleGraphSelect}
+                graphs={graphs}
+                isLoading={graphsLoading}
+                error={graphsError}
+              />
             </aside>
           </div>
         )}

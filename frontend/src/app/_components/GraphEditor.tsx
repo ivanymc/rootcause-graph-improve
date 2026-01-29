@@ -285,12 +285,12 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-800">
-                    <tr className="text-left text-gray-400">
-                      <th className="pb-2">Name</th>
-                      <th className="pb-2">Type</th>
-                      <th className="pb-2 text-right">Base Value</th>
-                      <th className="pb-2 text-right">Simulated</th>
-                      <th className="pb-2 text-right">Actions</th>
+                    <tr className="text-center text-gray-400">
+                      <th className="py-2">Name</th>
+                      <th className="py-2">Type</th>
+                      <th className="py-2">Base Value</th>
+                      <th className="py-2">Simulated</th>
+                      <th className="py-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -317,12 +317,12 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
                             {node.name}
                           </td>
                           <td className="py-2 text-gray-500">{node.node_type}</td>
-                          <td className="py-2 text-right text-gray-400">
+                          <td className="py-2 text-center text-gray-400">
                             {typeof node.base_value === "number"
                               ? node.base_value.toFixed(2)
                               : node.base_value}
                           </td>
-                          <td className="py-2 text-right">
+                          <td className="py-2 text-center">
                             {simResult ? (
                               <span className={simResult && typeof simResult.original === "number" && typeof simResult.simulated === "number" && Math.abs(simResult.simulated - simResult.original) > 0.0001
                                 ? (simResult.simulated - simResult.original > 0 ? "text-green-400" : "text-red-400")
@@ -337,7 +337,7 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
                               <span className="text-gray-600">-</span>
                             )}
                           </td>
-                          <td className="py-2 text-right">
+                          <td className="py-2 text-center">
                             <button
                               onClick={() => setEditingNode(node)}
                               disabled={isMutating}
@@ -403,26 +403,26 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-800">
-                    <tr className="text-left text-gray-400">
-                      <th className="pb-2">Source</th>
-                      <th className="pb-2">Target</th>
-                      <th className="pb-2 text-right">Weight</th>
-                      <th className="pb-2 text-right">Actions</th>
+                    <tr className="text-center text-gray-400">
+                      <th className="py-2">Source</th>
+                      <th className="py-2">Target</th>
+                      <th className="py-2">Weight</th>
+                      <th className="py-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {graph.edges.map((edge, i) => (
-                      <tr key={i} className="border-t border-gray-700 hover:bg-gray-700/50">
+                      <tr key={i} className="border-t text-center border-gray-700 hover:bg-gray-700/50">
                         <td className="py-2">
                           <span className="text-blue-400">{getNodeName(edge.source_id)}</span>
                         </td>
                         <td className="py-2">
                           <span className="text-green-400">{getNodeName(edge.target_id)}</span>
                         </td>
-                        <td className="py-2 text-right text-gray-400">
+                        <td className="py-2 text-center text-gray-400">
                           {edge.weight.toFixed(4)}
                         </td>
-                        <td className="py-2 text-right">
+                        <td className="py-2 text-center">
                           <button
                             onClick={() => setEditingEdge({ edge, index: i })}
                             disabled={isMutating}
