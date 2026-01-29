@@ -8,6 +8,7 @@ from app.models import CausalGraph, Node, Edge, NodeType
 class GraphStorage:
     def __init__(self):
         self._graphs: dict[str, CausalGraph] = {}
+        self._default_graphs: dict[str, dict] = {}
         self._load_sample_graphs()
 
     def _load_sample_graphs(self):
@@ -20,6 +21,7 @@ class GraphStorage:
                         data = json.load(f)
                     graph = self._parse_graph(data)
                     self._graphs[graph.id] = graph
+                    self._default_graphs[graph.id] = data
                     print(f"Loaded graph: {graph.name} ({len(graph.nodes)} nodes)")
                 except Exception as e:
                     print(f"Failed to load {json_file}: {e}")
@@ -69,6 +71,23 @@ class GraphStorage:
     def update_graph(self, graph: CausalGraph) -> CausalGraph:
         """Update an existing graph in storage."""
         self._graphs[graph.id] = graph
+        return graph
+
+    def reset_all_graphs(self) -> list[CausalGraph]:
+        """Reset all graphs to their original sample definitions."""
+        self._graphs = {}
+        for graph_id, data in self._default_graphs.items():
+            graph = self._parse_graph(data)
+            self._graphs[graph_id] = graph
+        return list(self._graphs.values())
+
+    def reset_graph(self, graph_id: str) -> Optional[CausalGraph]:
+        """Reset a single graph to its original sample definition."""
+        data = self._default_graphs.get(graph_id)
+        if not data:
+            return None
+        graph = self._parse_graph(data)
+        self._graphs[graph_id] = graph
         return graph
 
     # Node CRUD operations

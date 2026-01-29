@@ -101,6 +101,21 @@ async def run_simulation(graph_id: str, request: SimulationRequest):
     return simulate(graph, request.interventions)
 
 
+@app.post("/graphs/reset", response_model=list[CausalGraph])
+async def reset_all_graphs():
+    """Reset all graphs to their default sample data."""
+    return storage.reset_all_graphs()
+
+
+@app.post("/graphs/{graph_id}/reset", response_model=CausalGraph)
+async def reset_graph(graph_id: str):
+    """Reset a specific graph to its default sample data."""
+    graph = storage.reset_graph(graph_id)
+    if not graph:
+        raise HTTPException(status_code=404, detail="Graph not found or not resettable")
+    return graph
+
+
 @app.get("/graphs/{graph_id}/validate", response_model=ValidationResult)
 async def validate_graph_endpoint(graph_id: str):
     graph = storage.get_graph(graph_id)

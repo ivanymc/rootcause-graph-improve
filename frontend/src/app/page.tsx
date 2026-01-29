@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X, Sliders, BarChart3 } from "lucide-react";
 import { GraphList } from "./_components/GraphList";
 import { GraphEditor } from "./_components/GraphEditor";
 import { InterventionPanel } from "./_components/InterventionPanel";
 import { ResultsView } from "./_components/ResultsView";
-import { useGraphs } from "~/hooks/useGraphApi";
+import { useGraphs, useResetAllGraphs } from "~/hooks/useGraphApi";
 import type { SimulationResponse } from "~/lib/types";
 
 export default function Home() {
@@ -20,6 +20,16 @@ export default function Home() {
 
   // Fetch graphs to auto-select the first one
   const { data: graphs } = useGraphs();
+  const resetAllGraphs = useResetAllGraphs();
+  const hasResetRef = useRef(false);
+
+  useEffect(() => {
+    if (hasResetRef.current) {
+      return;
+    }
+    hasResetRef.current = true;
+    resetAllGraphs.mutate();
+  }, [resetAllGraphs]);
 
   // Auto-select first graph when graphs are loaded
   useEffect(() => {

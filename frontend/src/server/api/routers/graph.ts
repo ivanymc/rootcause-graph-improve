@@ -117,6 +117,22 @@ export const graphRouter = createTRPCRouter({
       return fetchBackend<ValidationResult>(`/graphs/${input.id}/validate`);
     }),
 
+  // Reset all graphs to default sample data
+  resetAll: publicProcedure.mutation(async () => {
+    return fetchBackend<CausalGraph[]>("/graphs/reset", {
+      method: "POST",
+    });
+  }),
+
+  // Reset a specific graph to its default sample data
+  resetGraph: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return fetchBackend<CausalGraph>(`/graphs/${input.id}/reset`, {
+        method: "POST",
+      });
+    }),
+
   // ============ Node CRUD ============
 
   addNode: publicProcedure

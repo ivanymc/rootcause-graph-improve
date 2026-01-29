@@ -11,6 +11,7 @@ import {
   useAddEdge,
   useUpdateEdge,
   useDeleteEdge,
+  useResetGraph,
 } from "~/hooks/useGraphApi";
 import { GraphVisualization } from "./GraphVisualization";
 import type { SimulationResponse, Node, Edge, CreateNodeRequest, CreateEdgeRequest } from "~/lib/types";
@@ -34,6 +35,7 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
   const addEdge = useAddEdge(graphId);
   const updateEdge = useUpdateEdge(graphId);
   const deleteEdge = useDeleteEdge(graphId);
+  const resetGraph = useResetGraph(graphId);
 
   // Node editing state
   const [editingNode, setEditingNode] = useState<Node | null>(null);
@@ -139,7 +141,15 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
     deleteNode.isPending ||
     addEdge.isPending ||
     updateEdge.isPending ||
-    deleteEdge.isPending;
+    deleteEdge.isPending ||
+    resetGraph.isPending;
+
+  const handleResetGraph = () => {
+    if (!graphId) return;
+    if (confirm("Reset this graph to its default state? This will discard changes.")) {
+      resetGraph.mutate({ id: graphId });
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -147,6 +157,13 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold">{graph.name}</h2>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleResetGraph}
+            disabled={isMutating}
+            className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
+          >
+            Reset Graph
+          </button>
           {/* View Mode Toggle */}
           <div className="flex rounded bg-gray-800 p-1">
             <button
