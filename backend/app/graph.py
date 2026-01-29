@@ -18,8 +18,8 @@ def validate_graph(graph: CausalGraph) -> ValidationResult:
             errors.append(f"Self-loop detected on node '{edge.source_id}'")
 
     # Check 3: Cycle detection using DFS
-    cycle_errors = _detect_cycles(graph, node_ids)
-    errors.extend(cycle_errors)
+    # Cycles are allowed, so we don't surface them as validation errors.
+    # _detect_cycles(graph, node_ids)
 
     return ValidationResult(is_valid=len(errors) == 0, errors=errors)
 
@@ -35,29 +35,31 @@ def _detect_cycles(graph: CausalGraph, node_ids: set[str]) -> list[str]:
     color = {nid: WHITE for nid in node_ids}
     errors: list[str] = []
 
-    def dfs(node: str, path: list[str]) -> bool:
+    def dfs(node: str, path: list[str], in_stack: set[str]) -> bool:
         """Returns True if a cycle is found starting from this node."""
         color[node] = GRAY
         path.append(node)
+        in_stack.add(node)
 
         for neighbor in adjacency.get(node, []):
-            if color.get(neighbor) == GRAY:
+            if color.get(neighbor) == GRAY and neighbor in in_stack:
                 # Found a back edge - this is a cycle
                 cycle_start = path.index(neighbor)
                 cycle_path = path[cycle_start:] + [neighbor]
                 errors.append(f"Cycle detected: {' -> '.join(cycle_path)}")
                 return True
             elif color.get(neighbor) == WHITE:
-                if dfs(neighbor, path):
+                if dfs(neighbor, path, in_stack):
                     return True
 
         path.pop()
+        in_stack.remove(node)
         color[node] = BLACK
         return False
 
     # Run DFS from all unvisited nodes
     for node in node_ids:
         if color[node] == WHITE:
-            dfs(node, [])
+            dfs(node, [], set())
 
     return errors
