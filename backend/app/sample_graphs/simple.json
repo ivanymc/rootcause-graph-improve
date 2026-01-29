@@ -1,0 +1,58 @@
+{
+  "id": "simple-marketing",
+  "name": "Simple Marketing Model",
+  "nodes": [
+    {
+      "id": "ad_spend",
+      "name": "Ad Spend ($)",
+      "node_type": "continuous",
+      "base_value": 1000
+    },
+    {
+      "id": "impressions",
+      "name": "Impressions",
+      "node_type": "continuous",
+      "base_value": 10000
+    },
+    {
+      "id": "clicks",
+      "name": "Clicks",
+      "node_type": "continuous",
+      "base_value": 500
+    },
+    {
+      "id": "conversions",
+      "name": "Conversions",
+      "node_type": "continuous",
+      "base_value": 50
+    },
+    {
+      "id": "revenue",
+      "name": "Revenue ($)",
+      "node_type": "continuous",
+      "base_value": 2500
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "ad_spend",
+      "target_id": "impressions",
+      "weight": 10
+    },
+    {
+      "source_id": "impressions",
+      "target_id": "clicks",
+      "weight": 0.05
+    },
+    {
+      "source_id": "clicks",
+      "target_id": "conversions",
+      "weight": 0.1
+    },
+    {
+      "source_id": "conversions",
+      "target_id": "revenue",
+      "weight": 50
+    }
+  ]
+}
