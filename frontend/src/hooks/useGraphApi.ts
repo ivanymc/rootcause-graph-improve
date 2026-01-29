@@ -68,6 +68,7 @@ export function useAddNode(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
     },
   });
 }
@@ -84,6 +85,7 @@ export function useUpdateNode(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
     },
   });
 }
@@ -100,6 +102,7 @@ export function useDeleteNode(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
     },
   });
 }
@@ -118,6 +121,7 @@ export function useAddEdge(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
     },
   });
 }
@@ -134,6 +138,7 @@ export function useUpdateEdge(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
     },
   });
 }
@@ -150,6 +155,39 @@ export function useDeleteEdge(graphId: string | null) {
         void utils.graph.getById.invalidate({ id: graphId });
         void utils.graph.validate.invalidate({ id: graphId });
       }
+      void utils.graph.list.invalidate();
+    },
+  });
+}
+
+/**
+ * Hook to reset all graphs to their default sample data.
+ */
+export function useResetAllGraphs() {
+  const utils = api.useUtils();
+
+  return api.graph.resetAll.useMutation({
+    onSuccess: () => {
+      void utils.graph.list.invalidate();
+      void utils.graph.getById.invalidate();
+      void utils.graph.validate.invalidate();
+    },
+  });
+}
+
+/**
+ * Hook to reset a single graph to its default sample data.
+ */
+export function useResetGraph(graphId: string | null) {
+  const utils = api.useUtils();
+
+  return api.graph.resetGraph.useMutation({
+    onSuccess: () => {
+      if (graphId) {
+        void utils.graph.getById.invalidate({ id: graphId });
+        void utils.graph.validate.invalidate({ id: graphId });
+      }
+      void utils.graph.list.invalidate();
     },
   });
 }
