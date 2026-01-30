@@ -21,19 +21,19 @@ export function GraphVisualization({ graph, simulationResults, focusedNodeId }: 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
-  // Build a map of simulation results for quick lookup
-  const simulationMap = new Map<string, { original: number | string; simulated: number | string }>();
-  if (simulationResults) {
-    for (const result of simulationResults.results) {
-      simulationMap.set(result.node_id, {
-        original: result.original_value,
-        simulated: result.simulated_value,
-      });
-    }
-  }
-
   useEffect(() => {
     if (!chartRef.current) return;
+
+    // Build a map of simulation results for quick lookup
+    const simulationMap = new Map<string, { original: number | string; simulated: number | string }>();
+    if (simulationResults) {
+      for (const result of simulationResults.results) {
+        simulationMap.set(result.node_id, {
+          original: result.original_value,
+          simulated: result.simulated_value,
+        });
+      }
+    }
 
     // Initialize chart
     chartInstance.current ??= echarts.init(chartRef.current, "dark");

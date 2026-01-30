@@ -201,6 +201,32 @@ Restore graphs to original state.
 
 ---
 
+## Testing
+
+Unit tests using **Jest** for frontend utilities.
+
+**Run tests:** `npm run test`
+
+| Test Suite | Tests | Description |
+|------------|-------|-------------|
+| `intervention.test.ts` | 23 | Intervention value parsing and validation |
+| `graphUtils.test.ts` | 34 | Graph manipulation and utility functions |
+
+**Test Coverage:**
+- `parseInterventionValue()` - Valid/invalid numeric parsing, edge cases
+- `createIntervention()` - Intervention object creation with validation
+- `findNodeById/ByName()` - Node lookup functions
+- `getNodeEdges()` - Edge queries (incoming/outgoing)
+- `isSelfLoop()`, `edgeExists()` - Edge validation
+- `validateEdgeReferences()` - Graph integrity checks
+- `calculateDelta()`, `getChangedNodes()` - Simulation result processing
+- `filterNodesByQuery()`, `sortNodesByName()` - Node filtering/sorting
+- `groupNodesByType()` - Node categorization
+
+**Files:** `intervention.test.ts`, `graphUtils.test.ts`
+
+---
+
 ## File Reference
 
 | File | Purpose |
@@ -218,6 +244,7 @@ Restore graphs to original state.
 | `GraphList.tsx` | Graph selection sidebar |
 | `page.tsx` | App layout |
 | `intervention.ts` | Intervention validation |
+| `graphUtils.ts` | Graph utility functions |
 | `env.js` | Environment variables |
 
 ---
