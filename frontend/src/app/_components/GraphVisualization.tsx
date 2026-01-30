@@ -7,6 +7,7 @@ import type { CausalGraph, SimulationResponse } from "~/lib/types";
 interface GraphVisualizationProps {
   graph: CausalGraph;
   simulationResults: SimulationResponse | null;
+  focusedNodeId?: string | null;
 }
 
 // Color palette for node types
@@ -16,7 +17,7 @@ const NODE_COLORS: Record<string, string> = {
   binary: "#fac858",
 };
 
-export function GraphVisualization({ graph, simulationResults }: GraphVisualizationProps) {
+export function GraphVisualization({ graph, simulationResults, focusedNodeId }: GraphVisualizationProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -73,36 +74,50 @@ export function GraphVisualization({ graph, simulationResults }: GraphVisualizat
       let nodeColor = NODE_COLORS[node.node_type] ?? "#5470c6";
       let borderColor = "transparent";
       let borderWidth = 0;
+      let shadowBlur = 0;
+      let shadowColor = "transparent";
+
+      // Highlight focused node
+      const isFocused = node.id === focusedNodeId;
+      if (isFocused) {
+        borderColor = "#fbbf24"; // Yellow/gold border
+        borderWidth = 4;
+        shadowBlur = 20;
+        shadowColor = "#fbbf24";
+      }
 
       if (simResult && typeof simResult.original === "number" && typeof simResult.simulated === "number") {
         const delta = simResult.simulated - simResult.original;
         if (Math.abs(delta) > 0.0001) {
           // Color based on change direction: green for increase, red for decrease
           nodeColor = delta > 0 ? "#91cc75" : "#ee6666";
-          borderColor = delta > 0 ? "#4caf50" : "#f44336";
-          borderWidth = 3;
+          if (!isFocused) {
+            borderColor = delta > 0 ? "#4caf50" : "#f44336";
+            borderWidth = 3;
+          }
         }
       }
 
       return {
         id: node.id,
         name: node.name,
-        symbolSize,
+        symbolSize: isFocused ? symbolSize * 1.3 : symbolSize, // Make focused node larger
         value: displayValue,
         category: node.node_type,
         itemStyle: {
           color: nodeColor,
           borderColor,
           borderWidth,
+          shadowBlur,
+          shadowColor,
         },
       };
     });
 
     // Map edges to ECharts format
     const links = graph.edges.map((edge) => {
-      // Normalize weight for visual line width (1 to 5)
       const absWeight = Math.abs(edge.weight);
-      const lineWidth = Math.min(5, Math.max(1, Math.log10(absWeight + 1) * 2 + 1));
+      const lineWidth = Math.min(5, Math.max(5, Math.log10(absWeight + 1) * 2 + 5));
 
       return {
         source: edge.source_id,
@@ -186,15 +201,15 @@ export function GraphVisualization({ graph, simulationResults }: GraphVisualizat
           roam: true,
           draggable: true,
           force: {
-            repulsion: 300,
+            repulsion: 700,
             gravity: 0.1,
-            edgeLength: [100, 200],
+            edgeLength: 200,
             layoutAnimation: true,
           },
           emphasis: {
             focus: "adjacency",
             lineStyle: {
-              width: 4,
+              width: 12,
             },
           },
           edgeSymbol: ["none", "arrow"],
@@ -207,7 +222,7 @@ export function GraphVisualization({ graph, simulationResults }: GraphVisualizat
             color: "#fff",
           },
           lineStyle: {
-            opacity: 0.7,
+            opacity: 0.8,
           },
         },
       ],
@@ -224,7 +239,43 @@ export function GraphVisualization({ graph, simulationResults }: GraphVisualizat
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [graph, simulationResults]);
+  }, [graph, simulationResults, focusedNodeId]);
+
+  // Handle focused node highlighting
+  useEffect(() => {
+    if (!chartInstance.current || !focusedNodeId) return;
+
+    // Find the node index
+    const nodeIndex = graph.nodes.findIndex((n) => n.id === focusedNodeId);
+    if (nodeIndex === -1) return;
+
+    // Dispatch highlight action
+    chartInstance.current.dispatchAction({
+      type: "highlight",
+      seriesIndex: 0,
+      dataIndex: nodeIndex,
+    });
+
+    // Also dispatch a focus action to show adjacency
+    chartInstance.current.dispatchAction({
+      type: "focusNodeAdjacency",
+      seriesIndex: 0,
+      dataIndex: nodeIndex,
+    });
+
+    // Cleanup: downplay when focusedNodeId changes
+    return () => {
+      chartInstance.current?.dispatchAction({
+        type: "downplay",
+        seriesIndex: 0,
+        dataIndex: nodeIndex,
+      });
+      chartInstance.current?.dispatchAction({
+        type: "unfocusNodeAdjacency",
+        seriesIndex: 0,
+      });
+    };
+  }, [focusedNodeId, graph.nodes]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Pencil, Trash2, Plus, BarChart3, Table2, Check, X, Loader2 } from "lucide-react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { Pencil, Trash2, Plus, BarChart3, Table2, Check, X, Loader2, Search, XCircle, RotateCcw, Focus } from "lucide-react";
 import {
   useGraph,
   useValidateGraph,
@@ -21,10 +21,12 @@ type ViewMode = "graph" | "table";
 interface GraphEditorProps {
   graphId: string | null;
   simulationResults: SimulationResponse | null;
+  onReset?: () => void;
 }
 
-export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
+export function GraphEditor({ graphId, simulationResults, onReset }: GraphEditorProps) {
   const { data: graph, isLoading } = useGraph(graphId);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const { data: validation } = useValidateGraph(graphId);
   const [viewMode, setViewMode] = useState<ViewMode>("graph");
 
@@ -44,6 +46,133 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
   // Edge editing state
   const [editingEdge, setEditingEdge] = useState<{ edge: Edge; index: number } | null>(null);
   const [showAddEdge, setShowAddEdge] = useState(false);
+
+  // Node search/focus state
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [nodeSearchQuery, setNodeSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [showNodeSearch, setShowNodeSearch] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reset search when graph changes
+  useEffect(() => {
+    setFocusedNodeId(null);
+    setNodeSearchQuery("");
+    setDebouncedSearchQuery("");
+    setShowNodeSearch(false);
+    setHighlightedIndex(-1);
+  }, [graphId]);
+
+  // Debounce search query for large graphs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(nodeSearchQuery);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [nodeSearchQuery]);
+
+  // Reset highlighted index when search query changes
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [debouncedSearchQuery]);
+
+  // Click-outside handler to close search dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as globalThis.Node)
+      ) {
+        setShowNodeSearch(false);
+      }
+    };
+
+    if (showNodeSearch) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showNodeSearch]);
+
+  // Filter nodes based on search query - must be before early returns to follow Rules of Hooks
+  const filteredNodes = useMemo(() => {
+    if (!graph?.nodes) return [];
+    if (!debouncedSearchQuery.trim()) return graph.nodes;
+    const query = debouncedSearchQuery.toLowerCase();
+    return graph.nodes.filter(
+      (node) =>
+        node.name.toLowerCase().includes(query) ||
+        node.id.toLowerCase().includes(query)
+    );
+  }, [graph?.nodes, debouncedSearchQuery]);
+
+  // Get the displayed nodes (limited to 50)
+  const displayedNodes = useMemo(() => filteredNodes.slice(0, 50), [filteredNodes]);
+
+  // Keyboard navigation handler
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        setShowNodeSearch(false);
+        setHighlightedIndex(-1);
+        (e.target as HTMLInputElement).blur();
+        return;
+      }
+
+      if (!showNodeSearch || displayedNodes.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev < displayedNodes.length - 1 ? prev + 1 : 0
+        );
+        // Scroll into view
+        setTimeout(() => {
+          const highlighted = dropdownRef.current?.querySelector('[data-highlighted="true"]');
+          highlighted?.scrollIntoView({ block: "nearest" });
+        }, 0);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev > 0 ? prev - 1 : displayedNodes.length - 1
+        );
+        setTimeout(() => {
+          const highlighted = dropdownRef.current?.querySelector('[data-highlighted="true"]');
+          highlighted?.scrollIntoView({ block: "nearest" });
+        }, 0);
+      } else if (e.key === "Enter" && highlightedIndex >= 0) {
+        e.preventDefault();
+        const selectedNode = displayedNodes[highlightedIndex];
+        if (selectedNode) {
+          setFocusedNodeId(selectedNode.id);
+          setNodeSearchQuery(selectedNode.name);
+          setShowNodeSearch(false);
+          setHighlightedIndex(-1);
+        }
+      }
+    },
+    [showNodeSearch, displayedNodes, highlightedIndex]
+  );
+
+  // Helper to highlight matching text
+  const highlightMatch = useCallback(
+    (text: string) => {
+      if (!debouncedSearchQuery.trim()) return text;
+      const query = debouncedSearchQuery.toLowerCase();
+      const index = text.toLowerCase().indexOf(query);
+      if (index === -1) return text;
+      return (
+        <>
+          {text.slice(0, index)}
+          <span className="bg-yellow-500/30 text-yellow-200">
+            {text.slice(index, index + query.length)}
+          </span>
+          {text.slice(index + query.length)}
+        </>
+      );
+    },
+    [debouncedSearchQuery]
+  );
 
   if (!graphId) {
     return (
@@ -146,8 +275,17 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
 
   const handleResetGraph = () => {
     if (!graphId) return;
-    if (confirm("Reset this graph to its default state? This will discard changes.")) {
-      resetGraph.mutate({ id: graphId });
+    if (confirm("Reset this graph to its default state? This will discard all changes and interventions.")) {
+      resetGraph.mutate({ id: graphId }, {
+        onSuccess: () => {
+          // Clear node search state
+          setFocusedNodeId(null);
+          setNodeSearchQuery("");
+          setShowNodeSearch(false);
+          // Notify parent to clear simulation/interventions
+          onReset?.();
+        },
+      });
     }
   };
 
@@ -160,9 +298,10 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
           <button
             onClick={handleResetGraph}
             disabled={isMutating}
-            className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
           >
-            Reset Graph
+            <RotateCcw size={16} /> 
+            <span className="hidden sm:inline">Reset</span>
           </button>
           {/* View Mode Toggle */}
           <div className="flex rounded bg-gray-800 p-1">
@@ -199,7 +338,7 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
 
           {validation && (
             <span
-              className={`rounded px-2 py-1 text-sm ${
+              className={`rounded px-2 py-2.5 text-sm ${
                 validation.is_valid
                   ? "bg-green-600/20 text-green-400"
                   : "bg-red-600/20 text-red-400"
@@ -241,8 +380,110 @@ export function GraphEditor({ graphId, simulationResults }: GraphEditorProps) {
 
       {/* Main Content Area */}
       {viewMode === "graph" ? (
-        <div className="flex-1 rounded border border-gray-700 bg-gray-800/50" style={{ minHeight: "400px" }}>
-          <GraphVisualization graph={graph} simulationResults={simulationResults} />
+        <div className="flex flex-1 flex-col rounded border border-gray-700 bg-gray-800/50" style={{ minHeight: "400px" }}>
+          {/* Node Search Bar */}
+          <div ref={searchContainerRef} className="relative border-b border-gray-700 p-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={nodeSearchQuery}
+                  onChange={(e) => {
+                    setNodeSearchQuery(e.target.value);
+                    setShowNodeSearch(true);
+                  }}
+                  onFocus={() => setShowNodeSearch(true)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder={`Search ${graph.nodes.length} nodes...`}
+                  className="w-full rounded bg-gray-700 py-2 pl-9 pr-8 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                {nodeSearchQuery && (
+                  <button
+                    onClick={() => {
+                      setNodeSearchQuery("");
+                      setDebouncedSearchQuery("");
+                      setShowNodeSearch(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    title="Clear search"
+                  >
+                    <XCircle size={16} />
+                  </button>
+                )}
+              </div>
+              {/* Clear focus button */}
+              {focusedNodeId && (
+                <button
+                  onClick={() => {
+                    setFocusedNodeId(null);
+                    setNodeSearchQuery("");
+                    setDebouncedSearchQuery("");
+                  }}
+                  className="flex shrink-0 items-center gap-1.5 rounded bg-yellow-600/20 px-2 py-2.5 text-xs text-yellow-400 hover:bg-yellow-600/30"
+                  title="Clear focus"
+                >
+                  <Focus size={14} />
+                  <span className="max-w-30 truncate">
+                    {graph.nodes.find((n) => n.id === focusedNodeId)?.name}
+                  </span>
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {showNodeSearch && displayedNodes.length > 0 && (
+              <div
+                ref={dropdownRef}
+                className="absolute left-2 right-2 top-full z-10 mt-1 max-h-64 overflow-auto rounded border border-gray-600 bg-gray-800 shadow-lg"
+              >
+                {displayedNodes.map((node, index) => (
+                  <button
+                    key={node.id}
+                    data-highlighted={highlightedIndex === index}
+                    onClick={() => {
+                      setFocusedNodeId(node.id);
+                      setNodeSearchQuery(node.name);
+                      setShowNodeSearch(false);
+                      setHighlightedIndex(-1);
+                    }}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                      highlightedIndex === index
+                        ? "bg-blue-600/40"
+                        : focusedNodeId === node.id
+                          ? "bg-blue-600/20"
+                          : "hover:bg-gray-700"
+                    }`}
+                  >
+                    <span className="truncate">{highlightMatch(node.name)}</span>
+                    <span className="ml-2 shrink-0 text-xs text-gray-500">{node.node_type}</span>
+                  </button>
+                ))}
+                {filteredNodes.length > 50 && (
+                  <div className="px-3 py-2 text-center text-xs text-gray-500">
+                    +{filteredNodes.length - 50} more nodes... (type to filter)
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showNodeSearch && debouncedSearchQuery && filteredNodes.length === 0 && (
+              <div className="absolute left-2 right-2 top-full z-10 mt-1 rounded border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-400 shadow-lg">
+                No nodes found matching &quot;{debouncedSearchQuery}&quot;
+              </div>
+            )}
+          </div>
+
+          {/* Graph */}
+          <div className="flex-1">
+            <GraphVisualization
+              graph={graph}
+              simulationResults={simulationResults}
+              focusedNodeId={focusedNodeId}
+            />
+          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">

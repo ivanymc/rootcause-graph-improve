@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useGraph, useSimulation } from "~/hooks/useGraphApi";
 import { createIntervention } from "~/lib/intervention";
 import type { Intervention, SimulationResponse } from "~/lib/types";
@@ -22,6 +22,7 @@ export function InterventionPanel({
   const [selectedNodeId, setSelectedNodeId] = useState<string>("");
   const [forcedValue, setForcedValue] = useState<string>("");
   const [interventions, setInterventions] = useState<Intervention[]>([]);
+  const forcedValueInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setInterventions([]);
@@ -97,7 +98,13 @@ export function InterventionPanel({
       <div className="space-y-2">
         <select
           value={selectedNodeId}
-          onChange={(e) => setSelectedNodeId(e.target.value)}
+          onChange={(e) => {
+            setSelectedNodeId(e.target.value);
+            // Auto-focus the value input when a node is selected
+            if (e.target.value) {
+              setTimeout(() => forcedValueInputRef.current?.focus(), 0);
+            }
+          }}
           className="w-full rounded bg-gray-800 p-2 text-sm"
         >
           <option value="">Select a node...</option>
@@ -109,10 +116,17 @@ export function InterventionPanel({
         </select>
 
         <input
+          ref={forcedValueInputRef}
           type="text"
           value={forcedValue}
           onChange={(e) => setForcedValue(e.target.value)}
-          placeholder="Forced value"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && selectedNodeId && forcedValue) {
+              e.preventDefault();
+              handleAddIntervention();
+            }
+          }}
+          placeholder="Forced value (press Enter to add)"
           className="w-full rounded bg-gray-800 p-2 text-sm"
           step="any"
         />

@@ -13,6 +13,7 @@ export default function Home() {
   const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null);
   const [simulationResults, setSimulationResults] =
     useState<SimulationResponse | null>(null);
+  const [interventionResetKey, setInterventionResetKey] = useState(0);
 
   // Mobile/tablet state
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
@@ -126,13 +127,21 @@ export default function Home() {
 
         {/* Center - Graph Visualization */}
         <section className="flex-1 overflow-auto p-4">
-          <GraphEditor graphId={selectedGraphId} simulationResults={simulationResults} />
+          <GraphEditor
+            graphId={selectedGraphId}
+            simulationResults={simulationResults}
+            onReset={() => {
+              setSimulationResults(null);
+              setInterventionResetKey((k) => k + 1);
+            }}
+          />
         </section>
 
         {/* Right Sidebar - Interventions & Results */}
         {/* Desktop: Always visible */}
         <aside className="hidden w-80 shrink-0 overflow-auto border-l border-gray-700 p-4 lg:block">
           <InterventionPanel
+            key={`desktop-${interventionResetKey}`}
             graphId={selectedGraphId}
             onSimulationComplete={setSimulationResults}
             onClearSimulation={() => setSimulationResults(null)}
@@ -161,6 +170,7 @@ export default function Home() {
                 </button>
               </div>
               <InterventionPanel
+                key={`mobile-${interventionResetKey}`}
                 graphId={selectedGraphId}
                 onSimulationComplete={(results) => {
                   setSimulationResults(results);
