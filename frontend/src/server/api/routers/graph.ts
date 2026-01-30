@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { CausalGraph, SimulationResponse, ValidationResult } from "~/lib/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_ENV === "prod" ? process.env.NEXT_PUBLIC_API_URL : "http://localhost:8000";
 
 // Zod schemas for input validation
 const NodeTypeSchema = z.enum(["continuous", "categorical", "binary"]);

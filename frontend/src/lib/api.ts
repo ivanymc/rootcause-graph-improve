@@ -17,8 +17,7 @@ import type {
   UpdateEdgeRequest,
 } from "./types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_ENV === "prod" ? process.env.NEXT_PUBLIC_API_URL : "http://localhost:8000";
 
 async function fetchApi<T>(
   endpoint: string,
