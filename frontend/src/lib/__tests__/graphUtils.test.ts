@@ -14,7 +14,7 @@ import {
   filterNodesByQuery,
   groupNodesByType,
 } from "../graphUtils";
-import type { CausalGraph, Node, SimulationResult } from "../types";
+import type { CausalGraph, SimulationResult } from "../types";
 
 // Test fixtures
 const mockGraph: CausalGraph = {

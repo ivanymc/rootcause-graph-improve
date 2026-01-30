@@ -141,9 +141,7 @@ export function groupNodesByType(nodes: Node[]): Record<string, Node[]> {
   return nodes.reduce(
     (acc, node) => {
       const type = node.node_type;
-      if (!acc[type]) {
-        acc[type] = [];
-      }
+      acc[type] ??= [];
       acc[type].push(node);
       return acc;
     },
