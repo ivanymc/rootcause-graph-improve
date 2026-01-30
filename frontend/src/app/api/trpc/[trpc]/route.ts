@@ -22,7 +22,7 @@ const handler = (req: NextRequest) =>
     router: appRouter,
     createContext: () => createContext(req),
     onError:
-      env.NODE_ENV === "development"
+      env.NEXT_ENV === "dev"
         ? ({
             path,
             error,
