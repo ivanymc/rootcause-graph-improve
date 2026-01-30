@@ -53,7 +53,8 @@ class GraphStorage:
         )
 
     def list_graphs(self) -> list[CausalGraph]:
-        return list(self._graphs.values())
+        return sorted(self._graphs.values(), key=lambda g: len(g.nodes))
+
 
     def get_graph(self, graph_id: str) -> Optional[CausalGraph]:
         return self._graphs.get(graph_id)
