@@ -9,8 +9,8 @@ from pathlib import Path
 
 random.seed(42)  # For reproducibility
 
-NUM_NODES = 2000
-NUM_EDGES = 5000
+NUM_NODES = 100
+NUM_EDGES = 250
 MAX_DEPTH = 15
 
 def generate_large_graph():
